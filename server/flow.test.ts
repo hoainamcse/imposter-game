@@ -7,12 +7,14 @@ import { attachOnlineServer } from './realtime.ts'
 class Client {
   snapshot: OnlineSnapshot | null = null
   errors: string[] = []
+  private readonly port: number
+  readonly id: string
   private socket!: WebSocket
 
-  constructor(
-    private readonly port: number,
-    readonly id: string,
-  ) {}
+  constructor(port: number, id: string) {
+    this.port = port
+    this.id = id
+  }
 
   connect() {
     this.socket = new WebSocket(`ws://127.0.0.1:${this.port}/ws`)
