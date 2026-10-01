@@ -207,8 +207,9 @@ export class OnlineRoom {
   snapshotFor(clientId: string): OnlineSnapshot {
     this.updateTimer()
     const isHost = clientId === this.hostId
-    const selected = this.playerIds.includes(clientId)
-    const alive = this.aliveIds.includes(clientId)
+    const inMatch = this.phase !== 'lobby'
+    const selected = inMatch ? this.playerIds.includes(clientId) : Boolean(this.members.get(clientId)?.selected)
+    const alive = inMatch ? this.aliveIds.includes(clientId) : selected
     const eliminated = selected && !alive && this.phase !== 'lobby' && this.phase !== 'reveal'
     const privileged = isHost || !selected || eliminated
     const round = this.round
