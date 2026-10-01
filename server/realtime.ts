@@ -50,6 +50,12 @@ export function attachOnlineServer(server: Server) {
         send(socket, { type: 'error', message: 'Bạn chưa vào phòng.' })
         return
       }
+      if (message.type === 'leave') {
+        const stillConnected = [...identities.entries()].some(([other, id]) => other !== socket && id === clientId)
+        if (!stillConnected) room.leave(clientId)
+        broadcast()
+        return
+      }
       const error = room.apply(clientId, message)
       if (error) send(socket, { type: 'error', message: error })
       broadcast()

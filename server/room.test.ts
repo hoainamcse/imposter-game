@@ -41,6 +41,29 @@ describe('OnlineRoom access', () => {
     )
   })
 
+  it('releases a name when the player leaves, including for another device', () => {
+    const room = new OnlineRoom()
+    expect(room.join({ type: 'join', clientId: 'phone-a', name: 'An', asHost: false })).toBeNull()
+    room.disconnect('phone-a')
+
+    expect(room.join({ type: 'join', clientId: 'phone-b', name: 'An', asHost: false })).toBeNull()
+    expect(room.snapshotFor('phone-b').participants.map((participant) => participant.name)).toEqual(['An'])
+  })
+
+  it('keeps a disconnected player seat during a match, but frees the name after they leave', () => {
+    const room = createLobby()
+    send(room, 'host', { type: 'start' })
+    room.disconnect('a')
+    expect(room.join({ type: 'join', clientId: 'other', name: 'An', asHost: false })).toMatch(/đã có/)
+    expect(room.join({ type: 'join', clientId: 'a', name: 'An', asHost: false })).toBeNull()
+
+    room.leave('a')
+    expect(room.join({ type: 'join', clientId: 'other', name: 'An', asHost: false })).toBeNull()
+    expect(room.snapshotFor('host').participants.some((participant) => participant.id === 'a' && !participant.connected)).toBe(
+      true,
+    )
+  })
+
   it('lets the host select players while unselected visitors remain spectators', () => {
     const room = createLobby()
     room.join({ type: 'join', clientId: 'viewer', name: 'Dũng', asHost: false })

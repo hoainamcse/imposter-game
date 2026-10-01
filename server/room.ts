@@ -53,6 +53,8 @@ export class OnlineRoom {
   private winner: Winner = null
   private timer: TimerState | null = null
   private previousWord?: string
+  /** Names of players who explicitly left during a match, kept only for display. */
+  private retainedNames = new Map<string, string>()
 
   join(message: Extract<ClientMessage, { type: 'join' }>): string | null {
     const id = message.clientId.trim()
@@ -86,7 +88,22 @@ export class OnlineRoom {
   disconnect(clientId: string) {
     if (this.hostId === clientId) this.hostId = null
     const member = this.members.get(clientId)
-    if (member) member.connected = false
+    if (!member) return
+    if (this.phase !== 'lobby' && this.playerIds.includes(clientId)) {
+      member.connected = false
+      return
+    }
+    this.members.delete(clientId)
+  }
+
+  leave(clientId: string) {
+    if (this.hostId === clientId) this.hostId = null
+    const member = this.members.get(clientId)
+    if (!member) return
+    if (this.phase !== 'lobby' && this.playerIds.includes(clientId)) {
+      this.retainedNames.set(clientId, member.name)
+    }
+    this.members.delete(clientId)
   }
 
   apply(clientId: string, message: Exclude<ClientMessage, { type: 'join' }>): string | null {
@@ -161,6 +178,11 @@ export class OnlineRoom {
       return this.startGame()
     }
 
+    if (message.type === 'leave') {
+      this.leave(clientId)
+      return null
+    }
+
     if (message.type === 'dissolve') {
       if (!isHost) return 'Chỉ host được giải tán ván.'
       this.phase = 'lobby'
@@ -171,6 +193,7 @@ export class OnlineRoom {
       this.outcome = null
       this.winner = null
       this.timer = null
+      this.retainedNames.clear()
       for (const member of this.members.values()) {
         member.selected = false
         member.ready = false
@@ -198,6 +221,17 @@ export class OnlineRoom {
       alive: this.aliveIds.includes(member.id),
       ready: member.ready,
     }))
+    for (const [id, name] of this.retainedNames) {
+      if (this.members.has(id)) continue
+      participants.push({
+        id,
+        name,
+        connected: false,
+        selected: true,
+        alive: this.aliveIds.includes(id),
+        ready: false,
+      })
+    }
 
     const roles =
       privileged && round
@@ -275,6 +309,7 @@ export class OnlineRoom {
     this.outcome = null
     this.winner = null
     this.timer = null
+    this.retainedNames.clear()
     for (const member of this.members.values()) member.ready = false
     return null
   }

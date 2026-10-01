@@ -63,6 +63,7 @@ export type ClientMessage =
   | { type: 'next-round' }
   | { type: 'new-game' }
   | { type: 'dissolve' }
+  | { type: 'leave' }
 
 export type ServerMessage =
   | { type: 'snapshot'; snapshot: OnlineSnapshot }

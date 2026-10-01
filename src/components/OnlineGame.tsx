@@ -84,7 +84,11 @@ export function OnlineGame({ onBack }: OnlineGameProps) {
     return () => {
       closed = true
       window.clearTimeout(retry)
-      socketRef.current?.close()
+      const socket = socketRef.current
+      if (socket?.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'leave' } satisfies ClientMessage))
+      }
+      socket?.close()
     }
   }, [session])
 
