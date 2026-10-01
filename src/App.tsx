@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { DiscussionScreen } from './components/DiscussionScreen'
+import { IntroScreen } from './components/IntroScreen'
+import { OnlineGame } from './components/OnlineGame'
 import { ResultScreen } from './components/ResultScreen'
 import { RevealScreen } from './components/RevealScreen'
 import { RulesDialog } from './components/RulesDialog'
@@ -25,7 +27,9 @@ interface Game {
 }
 
 type Phase =
+  | { name: 'intro' }
   | { name: 'setup' }
+  | { name: 'online' }
   | ({ name: 'reveal' } & Game)
   | ({ name: 'discussion' } & Game)
   | ({ name: 'voting' } & Game)
@@ -35,7 +39,7 @@ type Overlay = 'rules' | 'teams' | null
 
 export default function App() {
   const [settings, setSettings] = useState(loadSettings)
-  const [phase, setPhase] = useState<Phase>({ name: 'setup' })
+  const [phase, setPhase] = useState<Phase>({ name: 'intro' })
   const [overlay, setOverlay] = useState<Overlay>(null)
   const [players, setPlayers] = useState<string[]>([])
   const [teamNamesText, setTeamNamesText] = useState('')
@@ -65,11 +69,13 @@ export default function App() {
     })
   }
 
+  const goHome = () => setPhase({ name: 'intro' })
+
   const quit = () => {
-    if (window.confirm('Thoát ván đang chơi và quay về màn hình chính?')) setPhase({ name: 'setup' })
+    if (window.confirm('Thoát ván đang chơi và quay về trang giới thiệu?')) goHome()
   }
 
-  const inGame = phase.name !== 'setup' && !(phase.name === 'result' && phase.winner)
+  const inGame = phase.name !== 'intro' && phase.name !== 'setup' && !(phase.name === 'result' && phase.winner)
 
   return (
     <div className="app">
@@ -105,8 +111,20 @@ export default function App() {
       </header>
 
       <main key={`${phase.name}-${'roundNo' in phase ? phase.roundNo : 0}`} className="phase">
+        {phase.name === 'intro' && (
+          <IntroScreen
+            onPlay={() => setPhase({ name: 'setup' })}
+            onOnlinePlay={() => setPhase({ name: 'online' })}
+          />
+        )}
+        {phase.name === 'online' && <OnlineGame onBack={goHome} />}
         {phase.name === 'setup' && (
-          <SetupScreen settings={settings} onChange={setSettings} onStart={() => startGame()} />
+          <SetupScreen
+            settings={settings}
+            onChange={setSettings}
+            onStart={() => startGame()}
+            onBack={goHome}
+          />
         )}
         {phase.name === 'reveal' && (
           <RevealScreen
@@ -148,7 +166,7 @@ export default function App() {
               setPhase({ name: 'discussion', round: phase.round, alive: phase.alive, roundNo: phase.roundNo + 1 })
             }
             onPlayAgain={() => startGame(phase.round.word)}
-            onHome={() => setPhase({ name: 'setup' })}
+            onHome={goHome}
           />
         )}
       </main>

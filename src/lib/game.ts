@@ -1,4 +1,4 @@
-import type { Category, WordEntry } from '../data/words'
+import type { Category, WordEntry } from '../data/words.ts'
 
 export type Rng = () => number
 

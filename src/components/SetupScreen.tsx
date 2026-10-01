@@ -16,9 +16,10 @@ interface SetupScreenProps {
   settings: Settings
   onChange: (settings: Settings) => void
   onStart: () => void
+  onBack: () => void
 }
 
-export function SetupScreen({ settings, onChange, onStart }: SetupScreenProps) {
+export function SetupScreen({ settings, onChange, onStart, onBack }: SetupScreenProps) {
   const { playerCount, imposterCount, players, categoryIds, durationSec, imposterHint } = settings
   const error = validatePlayers(players)
   const imposterMax = maxImposters(playerCount)
@@ -48,6 +49,9 @@ export function SetupScreen({ settings, onChange, onStart }: SetupScreenProps) {
         if (!error) onStart()
       }}
     >
+      <button type="button" className="btn btn-ghost btn-sm intro-back" onClick={onBack}>
+        ← Giới thiệu
+      </button>
       <section className="card">
         <h2>
           <span className="step-num">1</span> Số lượng
