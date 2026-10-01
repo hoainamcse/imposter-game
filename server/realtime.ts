@@ -19,10 +19,8 @@ export function attachOnlineServer(server: Server) {
   }
 
   server.on('upgrade', (request, socket, head) => {
-    if (new URL(request.url ?? '/', 'http://localhost').pathname !== '/ws') {
-      socket.destroy()
-      return
-    }
+    // Other upgrade listeners (e.g. Vite HMR) share this server, so leave foreign paths alone.
+    if (new URL(request.url ?? '/', 'http://localhost').pathname !== '/ws') return
     webSockets.handleUpgrade(request, socket, head, (webSocket) => webSockets.emit('connection', webSocket, request))
   })
 
