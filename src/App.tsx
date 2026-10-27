@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { DiscussionScreen } from './components/DiscussionScreen'
 import { IntroScreen } from './components/IntroScreen'
 import { OnlineGame } from './components/OnlineGame'
@@ -43,6 +43,13 @@ export default function App() {
   const [overlay, setOverlay] = useState<Overlay>(null)
   const [players, setPlayers] = useState<string[]>([])
   const [teamNamesText, setTeamNamesText] = useState('')
+  const [canLeaveRoom, setCanLeaveRoom] = useState(false)
+  const leaveRoomRef = useRef<(() => void) | null>(null)
+
+  const onLeaveReady = useCallback((leave: (() => void) | null) => {
+    leaveRoomRef.current = leave
+    setCanLeaveRoom(leave !== null)
+  }, [])
 
   useEffect(() => saveSettings(settings), [settings])
 
@@ -69,13 +76,7 @@ export default function App() {
     })
   }
 
-  const goHome = () => setPhase({ name: 'intro' })
-
-  const quit = () => {
-    if (window.confirm('Thoát ván đang chơi và quay về trang giới thiệu?')) goHome()
-  }
-
-  const inGame = phase.name !== 'intro' && phase.name !== 'setup' && !(phase.name === 'result' && phase.winner)
+  const goHome = useCallback(() => setPhase({ name: 'intro' }), [])
 
   return (
     <div className="app">
@@ -89,6 +90,11 @@ export default function App() {
           <span aria-hidden="true">🕵️</span> Kẻ Mạo Danh
         </h1>
         <div className="topbar-actions">
+          {canLeaveRoom && (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => leaveRoomRef.current?.()}>
+              Rời phòng
+            </button>
+          )}
           <button
             type="button"
             className="btn btn-ghost btn-sm"
@@ -107,11 +113,6 @@ export default function App() {
           >
             🎲<span className="btn-text"> Chia đội</span>
           </button>
-          {inGame && (
-            <button type="button" className="btn btn-ghost btn-sm" onClick={quit}>
-              Thoát
-            </button>
-          )}
         </div>
       </header>
 
@@ -122,7 +123,7 @@ export default function App() {
             onOnlinePlay={() => setPhase({ name: 'online' })}
           />
         )}
-        {phase.name === 'online' && <OnlineGame onBack={goHome} />}
+        {phase.name === 'online' && <OnlineGame onBack={goHome} onLeaveReady={onLeaveReady} />}
         {phase.name === 'setup' && (
           <SetupScreen
             settings={settings}

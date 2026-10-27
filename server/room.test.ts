@@ -158,4 +158,23 @@ describe('OnlineRoom game flow', () => {
     expect(lobby.phase).toBe('lobby')
     expect(lobby.participants.every((participant) => !participant.selected)).toBe(true)
   })
+
+  it('lets the host end an in-progress match and return everyone to the lobby', () => {
+    const room = createLobby()
+    send(room, 'host', { type: 'start' })
+    revealAll(room)
+    expect(room.snapshotFor('a').phase).toBe('discussion')
+
+    expect(room.apply('a', { type: 'dissolve' })).toMatch(/Chỉ host/)
+    expect(room.snapshotFor('a').phase).toBe('discussion')
+
+    send(room, 'host', { type: 'dissolve' })
+    const lobby = room.snapshotFor('host')
+    expect(lobby.phase).toBe('lobby')
+    expect(lobby.winner).toBeNull()
+    expect(lobby.outcome).toBeNull()
+    expect(lobby.participants.every((participant) => !participant.selected)).toBe(true)
+    expect(room.snapshotFor('a').phase).toBe('lobby')
+    expect(room.snapshotFor('a').isAlive).toBe(false)
+  })
 })

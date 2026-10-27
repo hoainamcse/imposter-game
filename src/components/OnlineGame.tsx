@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { CATEGORIES } from '../data/words'
 import { maxImposters, type RoleView } from '../lib/game'
 import type { ClientMessage, OnlineSnapshot, ServerMessage } from '../lib/online'
@@ -6,6 +6,7 @@ import { Stepper } from './Stepper'
 
 interface OnlineGameProps {
   onBack: () => void
+  onLeaveReady: (leave: (() => void) | null) => void
 }
 
 interface Session {
@@ -37,7 +38,7 @@ function roleLabel(role: RoleView) {
     : `Phe dân · ${role.word}`
 }
 
-export function OnlineGame({ onBack }: OnlineGameProps) {
+export function OnlineGame({ onBack, onLeaveReady }: OnlineGameProps) {
   const [session, setSession] = useState<Session | null>(null)
   const [snapshot, setSnapshot] = useState<OnlineSnapshot | null>(null)
   const [error, setError] = useState('')
@@ -111,11 +112,23 @@ export function OnlineGame({ onBack }: OnlineGameProps) {
     if (socketRef.current?.readyState === WebSocket.OPEN) socketRef.current.send(JSON.stringify(message))
   }
 
-  const leave = () => {
+  const leave = useCallback(() => {
+    onLeaveReady(null)
     setSession(null)
     setSnapshot(null)
     setError('')
     onBack()
+  }, [onBack, onLeaveReady])
+
+  const inRoom = snapshot !== null
+  useEffect(() => {
+    onLeaveReady(inRoom ? leave : null)
+    return () => onLeaveReady(null)
+  }, [inRoom, leave, onLeaveReady])
+
+  const endMatch = () => {
+    if (!window.confirm('Kết thúc ván này và đưa mọi người về phòng chờ?')) return
+    send({ type: 'dissolve' })
   }
 
   if (!session) return <JoinOnline onJoin={setSession} onBack={onBack} />
@@ -170,9 +183,11 @@ export function OnlineGame({ onBack }: OnlineGameProps) {
       {snapshot.phase === 'voting' && <OnlineVoting snapshot={snapshot} send={send} />}
       {snapshot.phase === 'result' && <OnlineResult snapshot={snapshot} send={send} />}
 
-      <button type="button" className="btn btn-ghost btn-sm intro-back" onClick={leave}>
-        Rời phòng
-      </button>
+      {snapshot.isHost && snapshot.phase !== 'lobby' && !(snapshot.phase === 'result' && snapshot.winner) && (
+        <button type="button" className="btn btn-ghost btn-block" onClick={endMatch}>
+          Kết thúc ván
+        </button>
+      )}
     </div>
   )
 }
