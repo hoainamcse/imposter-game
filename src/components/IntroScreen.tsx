@@ -1,21 +1,25 @@
 const STEPS = [
   {
     icon: '👁️',
+    tone: 'blue',
     title: 'Xem vai trò',
     text: 'Truyền máy lần lượt. Nhấn giữ thẻ để xem bí mật, rồi thả ra để che lại.',
   },
   {
     icon: '💬',
+    tone: 'green',
     title: 'Mô tả',
     text: 'Mỗi người nói một từ hoặc một câu ngắn về từ bí mật — vừa đủ để đồng đội hiểu.',
   },
   {
     icon: '⏱️',
+    tone: 'yellow',
     title: 'Thảo luận',
     text: 'Nghe cho kỹ. Kẻ Mạo Danh phải giả vờ như mình cũng biết từ đó.',
   },
   {
     icon: '🗳️',
+    tone: 'coral',
     title: 'Bỏ phiếu',
     text: 'Bỏ phiếu kín. Người nhiều phiếu nhất bị loại và lộ vai trò.',
   },
@@ -41,7 +45,7 @@ export function IntroScreen({ onPlay, onOnlinePlay }: IntroScreenProps) {
       <ol className="intro-flow">
         {STEPS.map((step, index) => (
           <li key={step.title}>
-            <span className="intro-icon" aria-hidden="true">
+            <span className={`intro-icon tone-${step.tone}`} aria-hidden="true">
               {step.icon}
             </span>
             <div>

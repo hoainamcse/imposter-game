@@ -79,6 +79,11 @@ export default function App() {
 
   return (
     <div className="app">
+      <div className="blobs" aria-hidden="true">
+        <span className="blob blob-purple" />
+        <span className="blob blob-blue" />
+        <span className="blob blob-coral" />
+      </div>
       <header className="topbar">
         <h1 className="logo">
           <span aria-hidden="true">🕵️</span> Kẻ Mạo Danh
