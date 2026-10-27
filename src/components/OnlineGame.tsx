@@ -42,12 +42,15 @@ export function OnlineGame({ onBack }: OnlineGameProps) {
   const [snapshot, setSnapshot] = useState<OnlineSnapshot | null>(null)
   const [error, setError] = useState('')
   const [connected, setConnected] = useState(false)
+  const [removedMessage, setRemovedMessage] = useState('')
   const socketRef = useRef<WebSocket | null>(null)
+  const stopReconnect = useRef(false)
 
   useEffect(() => {
     if (!session) return
     let retry: number | undefined
     let closed = false
+    stopReconnect.current = false
 
     const connect = () => {
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -68,15 +71,27 @@ export function OnlineGame({ onBack }: OnlineGameProps) {
       }
       socket.onmessage = (event) => {
         const message = JSON.parse(event.data as string) as ServerMessage
+        if (message.type === 'kicked') {
+          stopReconnect.current = true
+          setRemovedMessage(message.message)
+          setSnapshot(null)
+          setError('')
+          return
+        }
         if (message.type === 'error') setError(message.message)
         else {
           setSnapshot(message.snapshot)
           setError('')
         }
       }
-      socket.onclose = () => {
+      socket.onclose = (event) => {
         setConnected(false)
-        if (!closed) retry = window.setTimeout(connect, 1500)
+        if (event.code === 4000) {
+          stopReconnect.current = true
+          setRemovedMessage((current) => current || 'Host đã xoá bạn khỏi phòng chờ.')
+          setSnapshot(null)
+        }
+        if (!closed && !stopReconnect.current) retry = window.setTimeout(connect, 1500)
       }
     }
 
@@ -104,6 +119,28 @@ export function OnlineGame({ onBack }: OnlineGameProps) {
   }
 
   if (!session) return <JoinOnline onJoin={setSession} onBack={onBack} />
+
+  if (removedMessage) {
+    return (
+      <div className="screen center">
+        <div className="handoff-icon" aria-hidden="true">🚪</div>
+        <h2>Bạn đã bị xoá khỏi phòng</h2>
+        <p className="muted">{removedMessage}</p>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => {
+            setRemovedMessage('')
+            setSession(null)
+            setSnapshot(null)
+            setError('')
+          }}
+        >
+          Về màn hình vào phòng
+        </button>
+      </div>
+    )
+  }
 
   if (!snapshot) {
     return (
@@ -240,15 +277,25 @@ function OnlineLobby({
               <strong>{participant.name}</strong>
               <span className="muted small">{participant.selected ? 'Người chơi' : 'Khán giả'}</span>
               {snapshot.isHost && (
-                <input
-                  type="checkbox"
-                  aria-label={`Chọn ${participant.name} làm người chơi`}
-                  checked={participant.selected}
-                  disabled={!participant.connected}
-                  onChange={(event) =>
-                    send({ type: 'select', playerId: participant.id, selected: event.target.checked })
-                  }
-                />
+                <span className="roster-actions">
+                  <input
+                    type="checkbox"
+                    aria-label={`Chọn ${participant.name} làm người chơi`}
+                    checked={participant.selected}
+                    disabled={!participant.connected}
+                    onChange={(event) =>
+                      send({ type: 'select', playerId: participant.id, selected: event.target.checked })
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm roster-remove"
+                    aria-label={`Xoá ${participant.name} khỏi phòng`}
+                    onClick={() => send({ type: 'kick', playerId: participant.id })}
+                  >
+                    Xoá
+                  </button>
+                </span>
               )}
             </li>
           ))}

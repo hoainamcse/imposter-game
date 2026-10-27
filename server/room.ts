@@ -178,6 +178,13 @@ export class OnlineRoom {
       return this.startGame()
     }
 
+    if (message.type === 'kick') {
+      if (!isHost || this.phase !== 'lobby') return 'Chỉ host được xoá người chơi trong phòng chờ.'
+      if (!this.members.has(message.playerId)) return 'Không tìm thấy người này.'
+      this.members.delete(message.playerId)
+      return null
+    }
+
     if (message.type === 'leave') {
       this.leave(clientId)
       return null

@@ -63,8 +63,10 @@ export type ClientMessage =
   | { type: 'next-round' }
   | { type: 'new-game' }
   | { type: 'dissolve' }
+  | { type: 'kick'; playerId: string }
   | { type: 'leave' }
 
 export type ServerMessage =
   | { type: 'snapshot'; snapshot: OnlineSnapshot }
   | { type: 'error'; message: string }
+  | { type: 'kicked'; message: string }

@@ -1116,6 +1116,16 @@ textarea {
   accent-color: var(--accent);
 }
 
+.roster-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.roster-remove {
+  color: #9a2200;
+}
+
 .spectator-notice {
   border-color: var(--ink);
   background: var(--wash);

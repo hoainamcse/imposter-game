@@ -7,6 +7,7 @@ import { attachOnlineServer } from './realtime.ts'
 class Client {
   snapshot: OnlineSnapshot | null = null
   errors: string[] = []
+  kicked = ''
   private readonly port: number
   readonly id: string
   private socket!: WebSocket
@@ -22,6 +23,7 @@ class Client {
       const message = JSON.parse(data.toString()) as ServerMessage
       if (message.type === 'snapshot') this.snapshot = message.snapshot
       if (message.type === 'error') this.errors.push(message.message)
+      if (message.type === 'kicked') this.kicked = message.message
     })
     return new Promise<void>((resolve, reject) => {
       this.socket.once('open', () => resolve())
@@ -42,6 +44,15 @@ class Client {
     throw new Error(`${this.id} không nhận được trạng thái mong đợi (${this.errors.at(-1) ?? this.snapshot?.phase ?? 'chưa có'})`)
   }
 
+  async untilKicked() {
+    const deadline = Date.now() + 2000
+    while (Date.now() < deadline) {
+      if (this.kicked) return this.kicked
+      await new Promise((resolve) => setTimeout(resolve, 10))
+    }
+    throw new Error(`${this.id} không bị xoá khỏi phòng`)
+  }
+
   async untilError(fragment: string) {
     const deadline = Date.now() + 2000
     while (Date.now() < deadline) {
@@ -52,6 +63,7 @@ class Client {
   }
 
   close() {
+    if (this.socket.readyState === WebSocket.CLOSED) return Promise.resolve()
     this.socket.close()
     return new Promise<void>((resolve) => this.socket.once('close', () => resolve()))
   }
@@ -182,5 +194,37 @@ describe('online LAN flow', () => {
     rejoined.send({ type: 'join', clientId: 'another-phone', name: 'An', asHost: false })
     await rejoined.until((snapshot) => snapshot.participants.some((participant) => participant.id === 'another-phone'))
     expect(rejoined.errors).toEqual([])
+  })
+
+  it('removes a lobby player when the host kicks them', async () => {
+    server = createServer()
+    attachOnlineServer(server)
+    await new Promise<void>((resolve) => {
+      server.listen(0, '127.0.0.1', () => {
+        const address = server.address()
+        port = typeof address === 'object' && address ? address.port : 0
+        resolve()
+      })
+    })
+
+    const host = await open('host')
+    const an = await open('an')
+    const binh = await open('binh')
+    host.send({ type: 'join', clientId: 'host', name: '', asHost: true, password: 'host' })
+    an.send({ type: 'join', clientId: 'an', name: 'An', asHost: false })
+    binh.send({ type: 'join', clientId: 'binh', name: 'Bình', asHost: false })
+    await host.until((snapshot) => snapshot.participants.length === 2)
+
+    an.send({ type: 'kick', playerId: 'binh' })
+    await an.untilError('Chỉ host')
+    expect(an.kicked).toBe('')
+
+    host.send({ type: 'kick', playerId: 'binh' })
+    expect(await binh.untilKicked()).toMatch(/xoá bạn/)
+    await host.until((snapshot) => !snapshot.participants.some((participant) => participant.id === 'binh'))
+
+    const rejoined = await open('other-binh')
+    rejoined.send({ type: 'join', clientId: 'other-binh', name: 'Bình', asHost: false })
+    await rejoined.until((snapshot) => snapshot.participants.some((participant) => participant.id === 'other-binh'))
   })
 })

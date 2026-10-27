@@ -64,6 +64,24 @@ describe('OnlineRoom access', () => {
     )
   })
 
+  it('lets the host remove a player from the lobby and frees their name', () => {
+    const room = createLobby()
+    expect(room.apply('a', { type: 'kick', playerId: 'b' })).toMatch(/Chỉ host/)
+    expect(room.apply('host', { type: 'kick', playerId: 'missing' })).toMatch(/Không tìm thấy/)
+    expect(room.apply('host', { type: 'kick', playerId: 'b' })).toBeNull()
+
+    const remaining = room.snapshotFor('host').participants.map((participant) => participant.id)
+    expect(remaining).toEqual(['a', 'c'])
+    expect(room.join({ type: 'join', clientId: 'other', name: 'Bình', asHost: false })).toBeNull()
+  })
+
+  it('refuses to remove a player after the match has started', () => {
+    const room = createLobby()
+    send(room, 'host', { type: 'start' })
+    expect(room.apply('host', { type: 'kick', playerId: 'b' })).toMatch(/phòng chờ/)
+    expect(room.snapshotFor('host').participants.some((participant) => participant.id === 'b')).toBe(true)
+  })
+
   it('lets the host select players while unselected visitors remain spectators', () => {
     const room = createLobby()
     room.join({ type: 'join', clientId: 'viewer', name: 'Dũng', asHost: false })

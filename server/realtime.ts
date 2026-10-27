@@ -56,6 +56,21 @@ export function attachOnlineServer(server: Server) {
         broadcast()
         return
       }
+      if (message.type === 'kick') {
+        const error = room.apply(clientId, message)
+        if (error) {
+          send(socket, { type: 'error', message: error })
+        } else {
+          for (const [other, id] of [...identities]) {
+            if (id !== message.playerId) continue
+            identities.delete(other)
+            send(other, { type: 'kicked', message: 'Host đã xoá bạn khỏi phòng chờ.' })
+            other.close(4000, 'kicked')
+          }
+        }
+        broadcast()
+        return
+      }
       const error = room.apply(clientId, message)
       if (error) send(socket, { type: 'error', message: error })
       broadcast()
