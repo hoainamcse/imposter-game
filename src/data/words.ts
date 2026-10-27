@@ -125,4 +125,16 @@ export const CATEGORIES: Category[] = [
       { word: 'Xem phim', hint: 'Cốt truyện' },
     ],
   },
+  {
+    id: 'documents',
+    name: 'Chứng từ',
+    icon: '📄',
+    words: [
+      { word: '구매주문서', hint: '발주' },
+      { word: '견적송장', hint: '가계산' },
+      { word: '매매계약서', hint: '서명' },
+      { word: '가격표', hint: '게시' },
+      { word: '견적서', hint: '가격제안' },
+    ],
+  },
 ]
