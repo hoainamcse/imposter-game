@@ -126,15 +126,13 @@ export const CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'documents',
-    name: 'Chứng từ',
+    id: 'commerce',
+    name: 'Thương mại',
     icon: '📄',
     words: [
-      { word: '구매주문서', hint: '발주' },
-      { word: '견적송장', hint: '가계산' },
-      { word: '매매계약서', hint: '서명' },
-      { word: '가격표', hint: '게시' },
-      { word: '견적서', hint: '가격제안' },
+      { word: '구매주문서', hint: '구매' },
+      { word: '견적송장', hint: '견적' },
+      { word: '매매계약서', hint: '계약' },
     ],
   },
 ]
