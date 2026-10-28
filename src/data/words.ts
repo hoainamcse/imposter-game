@@ -130,9 +130,14 @@ export const CATEGORIES: Category[] = [
     name: 'Thương mại',
     icon: '📄',
     words: [
-      { word: '구매주문서', hint: '구매' },
-      { word: '견적송장', hint: '견적' },
-      { word: '매매계약서', hint: '계약' },
+      // { word: '구매주문서', hint: '구매' },
+      // { word: '견적송장', hint: '견적' },
+      // { word: '매매계약서', hint: '계약' },
+      { word: '신용장', hint: '신용' },
+      { word: '사전송금', hint: '사전' },
+      { word: 'D/P', hint: '지급해야' },
+      { word: 'D/A', hint: '수출자 큰 위험' },
+      { word: '입금 확인', hint: '계좌 확인' },
     ],
   },
 ]
